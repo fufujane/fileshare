@@ -97,4 +97,21 @@ app.delete('/api/items/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+
+  // Keep-alive: 每 4 分鐘自己打自己，防止 Render 免費版休眠
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+  if (RENDER_URL) {
+    const https = require('https');
+    const http = require('http');
+    setInterval(() => {
+      const url = RENDER_URL.startsWith('https') ? https : http;
+      url.get(RENDER_URL, (res) => {
+        console.log(`[keep-alive] ping ${RENDER_URL} → ${res.statusCode}`);
+      }).on('error', (e) => {
+        console.warn(`[keep-alive] ping failed: ${e.message}`);
+      });
+    }, 4 * 60 * 1000); // 240 秒
+  }
+});
