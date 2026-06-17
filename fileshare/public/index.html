@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share Box · 分享站</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #5b8fff;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
+  /* Layout */
+  .container { max-width: 760px; margin: 0 auto; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    padding: 6px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Upload area */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: #1a1d27cc;
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .upload-zone p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .upload-zone strong { color: var(--text); font-size: 1rem; }
+
+  /* Progress */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    margin-top: 16px;
+    display: none;
+    overflow: hidden;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* Text form */
+  .text-form { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; }
+  .text-form label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px; }
+  .text-form input, .text-form textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.95rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+  .text-form input:focus, .text-form textarea:focus { border-color: var(--accent); }
+  .text-form textarea { resize: vertical; min-height: 140px; }
+
+  /* Button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary:hover { background: #4070ee; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    max-width: 280px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* Items list */
+  .items-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 32px 0 14px;
+  }
+  .items-header h2 { font-size: 1rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Item cards */
+  .items-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: border-color 0.2s;
+  }
+  .item-card:hover { border-color: var(--surface2); }
+
+  .item-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .item-icon.file { background: #1e3a5f; }
+  .item-icon.text { background: #2d1f5e; }
+  .item-icon.image { background: #1a3a2a; }
+
+  /* Image preview */
+  .item-preview {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+
+  .item-body { flex: 1; min-width: 0; }
+  .item-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .item-meta { color: var(--muted); font-size: 0.78rem; margin-bottom: 6px; }
+  .item-text-preview {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 80px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .action-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { color: var(--text); border-color: var(--accent); }
+  .action-btn.del:hover { color: var(--red); border-color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.5rem; }
+    .upload-zone { padding: 32px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📦 Share Box</h1>
+  <p>上傳檔案、貼上文字，隨時取用</p>
+</header>
+
+<div class="container">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('upload')">📁 上傳檔案</button>
+    <button class="tab-btn" onclick="switchTab('text')">📝 貼上文字</button>
+  </div>
+
+  <!-- Upload Panel -->
+  <div class="panel active" id="panel-upload">
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" multiple onchange="handleFileSelect(this.files)">
+      <div class="upload-icon">☁️</div>
+      <strong>點擊或拖曳檔案到這裡</strong>
+      <p>支援任意格式，單檔最大 50MB</p>
+    </div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Text Panel -->
+  <div class="panel" id="panel-text">
+    <div class="text-form">
+      <label>標題（選填）</label>
+      <input type="text" id="textLabel" placeholder="例：API 金鑰、指令、備忘錄…">
+      <label>內容</label>
+      <textarea id="textContent" placeholder="貼上你要分享的文字…"></textarea>
+      <button class="btn btn-primary" onclick="submitText()">✦ 儲存文字</button>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="items-header">
+    <h2>所有項目</h2>
+    <button class="refresh-btn" onclick="loadItems()">↻ 重新整理</button>
+  </div>
+  <div class="items-list" id="itemsList">
+    <div class="empty-state"><div class="empty-icon">🗂</div>還沒有任何項目</div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Tab switching
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// Toast
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Drag & Drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFileSelect(e.dataTransfer.files);
+});
+
+// Upload files
+async function handleFileSelect(files) {
+  if (!files || !files.length) return;
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  bar.classList.add('visible');
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    fill.style.width = ((i / files.length) * 100) + '%';
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('上傳失敗');
+    } catch(e) {
+      showToast('❌ ' + file.name + ' 上傳失敗', 'error');
+    }
+  }
+
+  fill.style.width = '100%';
+  setTimeout(() => {
+    bar.classList.remove('visible');
+    fill.style.width = '0%';
+  }, 600);
+
+  showToast('✅ 上傳完成');
+  document.getElementById('fileInput').value = '';
+  loadItems();
+}
+
+// Submit text
+async function submitText() {
+  const label = document.getElementById('textLabel').value;
+  const content = document.getElementById('textContent').value;
+  if (!content.trim()) return showToast('⚠️ 請輸入文字內容', 'error');
+
+  const res = await fetch('/api/text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label, content })
+  });
+
+  if (res.ok) {
+    showToast('✅ 已儲存');
+    document.getElementById('textLabel').value = '';
+    document.getElementById('textContent').value = '';
+    loadItems();
+  } else {
+    showToast('❌ 儲存失敗', 'error');
+  }
+}
+
+// Format size
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// Format time
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('zh-TW') + ' ' + d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+}
+
+// File icon
+function fileIcon(mime) {
+  if (!mime) return '📄';
+  if (mime.startsWith('image/')) return '🖼';
+  if (mime.startsWith('video/')) return '🎬';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (mime.includes('pdf')) return '📕';
+  if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z')) return '🗜';
+  if (mime.includes('word') || mime.includes('document')) return '📘';
+  if (mime.includes('sheet') || mime.includes('excel')) return '📗';
+  return '📄';
+}
+
+// Copy to clipboard
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已複製';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch {
+    showToast('❌ 複製失敗', 'error');
+  }
+}
+
+// Delete item
+async function deleteItem(id) {
+  if (!confirm('確定刪除？')) return;
+  const res = await fetch('/api/items/' + id, { method: 'DELETE' });
+  if (res.ok) { showToast('🗑 已刪除'); loadItems(); }
+  else showToast('❌ 刪除失敗', 'error');
+}
+
+// Load items
+async function loadItems() {
+  const list = document.getElementById('itemsList');
+  const res = await fetch('/api/items');
+  const items = await res.json();
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🗂</div>還沒有任何項目</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    if (item.type === 'file') {
+      const isImage = item.mimetype && item.mimetype.startsWith('image/');
+      const icon = fileIcon(item.mimetype);
+      const iconEl = isImage
+        ? `<img class="item-preview" src="/uploads/${item.filename}" alt="${item.name}" loading="lazy">`
+        : `<div class="item-icon ${isImage ? 'image' : 'file'}">${icon}</div>`;
+      const downloadUrl = `/uploads/${item.filename}`;
+      const copyUrl = window.location.origin + downloadUrl;
+
+      return `
+        <div class="item-card">
+          ${iconEl}
+          <div class="item-body">
+            <div class="item-name" title="${item.name}">${item.name}</div>
+            <div class="item-meta">${formatSize(item.size)} · ${formatTime(item.createdAt)}</div>
+            <div class="item-actions">
+              <a href="${downloadUrl}" download="${item.name}" class="action-btn">⬇ 下載</a>
+              <button class="action-btn" onclick="copyText('${copyUrl}', this)">🔗 複製連結</button>
+              ${isImage ? `<a href="${downloadUrl}" target="_blank" class="action-btn">👁 預覽</a>` : ''}
+              <button class="action-btn del" onclick="deleteItem('${item.id}')">🗑 刪除</button>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const preview = item.content.length > 120 ? item.content.slice(0, 120) + '…' : item.content;
+      const escaped = item.content.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+      return `
+        <div class="item-card">
+          <div class="item-icon text">📝</div>
+          <div class="item-body">
+            <div class="item-name">${item.label}</div>
+            <div class="item-meta">${formatTime(item.createdAt)}</div>
+            <div class="item-text-preview">${preview.replace(/</g,'&lt;')}</div>
+            <div class="item-actions">
+              <button class="action-btn" onclick="copyText('${escaped}', this)">📋 複製內容</button>
+              <button class="action-btn del" onclick="deleteItem('${item.id}')">🗑 刪除</button>
+            </div>
+          </div>
+        </div>`;
+    }
+  }).join('');
+}
+
+// Init
+loadItems();
+</script>
+</body>
+</html>
